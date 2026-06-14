@@ -6,6 +6,8 @@ class_name Player
 extends CharacterBody2D
 
 const SPEED         := 260.0
+const ACCELERATION  := 900.0   # how fast you reach top speed
+const FRICTION      := 1400.0  # how fast you stop
 const JUMP_VELOCITY := -520.0
 const GRAVITY       := 980.0
 const ATTACK_COOLDOWN := 0.35
@@ -25,6 +27,9 @@ var body_rect:    ColorRect
 var attack_flash: ColorRect
 
 func _ready() -> void:
+	collision_layer = 1  # player lives on layer 1
+	collision_mask  = 1  # only collides with world (layer 1), not enemies
+
 	# Blue rectangle body
 	body_rect = ColorRect.new()
 	body_rect.size = Vector2(30, 48)
@@ -56,10 +61,10 @@ func _physics_process(delta: float) -> void:
 
 	var dir := Input.get_axis("move_left", "move_right")
 	if dir != 0:
-		velocity.x = dir * SPEED
+		velocity.x = move_toward(velocity.x, dir * SPEED, ACCELERATION * delta)
 		facing_right = dir > 0
 	else:
-		velocity.x = 0.0
+		velocity.x = move_toward(velocity.x, 0.0, FRICTION * delta)
 
 	attack_timer     = maxf(0.0, attack_timer     - delta)
 	spell_timer      = maxf(0.0, spell_timer      - delta)
@@ -95,17 +100,28 @@ func _attack() -> void:
 
 func _cast_spell() -> void:
 	spell_timer = SPELL_COOLDOWN
-	var spell := FireSpell.new()
+	var side      := 1 if facing_right else -1
+	var spawn_pos := global_position + Vector2(40.0 * side, -28)
+	var spell     := FireSpell.new()
 	spell.direction = Vector2.RIGHT if facing_right else Vector2.LEFT
-	spell.position  = global_position + Vector2(0, -24)
 	get_parent().add_child(spell)
+	spell.global_position = spawn_pos  # must set AFTER add_child
 
-func take_damage(amount: int, _from_dir: int = 0) -> void:
+func take_damage(amount: int, from_dir: int = 0) -> void:
 	if invincible_timer > 0.0:
 		return
-	invincible_timer = 0.6
+	invincible_timer = 0.7
 	health = max(0, health - amount)
 	health_changed.emit(health, MAX_HEALTH)
+
+	# Physical knockback: pushed sideways and briefly airborne
+	velocity.x = float(from_dir) * 360.0
+	velocity.y = -220.0
+
+	# Lighter screen impact (you're the one getting hit, not landing one)
+	var main := get_tree().current_scene
+	if main.has_method("impact_feedback"):
+		main.impact_feedback(5.0)
 
 	body_rect.color = Color.RED
 	await get_tree().create_timer(0.12).timeout

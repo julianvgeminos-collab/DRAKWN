@@ -16,18 +16,18 @@ var core: ColorRect
 var glow: ColorRect
 
 func _ready() -> void:
-	# Outer glow (larger, semi-transparent)
+	# Outer glow — wide orange halo
 	glow = ColorRect.new()
-	glow.size = Vector2(28, 18)
-	glow.position = Vector2(-14, -9)
-	glow.color = Color(1.0, 0.45, 0.05, 0.40)
+	glow.size = Vector2(56, 28)
+	glow.position = Vector2(-28, -14)
+	glow.color = Color(1.0, 0.40, 0.02, 0.50)
 	add_child(glow)
 
-	# Core fireball
+	# Core fireball — bright yellow-orange, clearly visible
 	core = ColorRect.new()
-	core.size = Vector2(18, 12)
-	core.position = Vector2(-9, -6)
-	core.color = Color(1.0, 0.62, 0.10)
+	core.size = Vector2(36, 20)
+	core.position = Vector2(-18, -10)
+	core.color = Color(1.0, 0.75, 0.10)
 	add_child(core)
 
 func _process(delta: float) -> void:

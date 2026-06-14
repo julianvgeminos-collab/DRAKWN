@@ -20,6 +20,8 @@ var hp_fill:   ColorRect
 
 func _ready() -> void:
 	add_to_group("enemies")
+	collision_layer = 2  # enemies live on layer 2
+	collision_mask  = 1  # only collide with world (layer 1), not with player
 
 	# Red-orange rectangle body
 	body_rect = ColorRect.new()
@@ -59,9 +61,10 @@ func _physics_process(delta: float) -> void:
 		var dir := signf(target.global_position.x - global_position.x)
 		velocity.x = dir * SPEED
 
-		var dist := global_position.distance_to(target.global_position)
+		var dist     := global_position.distance_to(target.global_position)
+		var push_dir := int(signf(target.global_position.x - global_position.x))
 		if dist < 38.0 and contact_timer <= 0.0:
-			target.take_damage(CONTACT_DAMAGE)
+			target.take_damage(CONTACT_DAMAGE, push_dir)
 			contact_timer = CONTACT_COOLDOWN
 	else:
 		velocity.x = 0.0
@@ -72,8 +75,16 @@ func take_damage(amount: int, knockback_dir: int = 0) -> void:
 	health = max(0, health - amount)
 	hp_fill.size.x = 34.0 * float(health) / float(MAX_HEALTH)
 
+	# Physical launch: flies up and to the side — more force = bigger arc
 	if knockback_dir != 0:
-		velocity.x = float(knockback_dir) * 280.0
+		velocity.x = float(knockback_dir) * 420.0
+		velocity.y = -360.0
+
+	# Screen impact scaled by damage (sword: ~6, spell: ~10)
+	var shake := clampf(float(amount) * 0.25, 4.0, 12.0)
+	var main  := get_tree().current_scene
+	if main.has_method("impact_feedback"):
+		main.impact_feedback(shake)
 
 	body_rect.color = Color.WHITE
 	await get_tree().create_timer(0.1).timeout

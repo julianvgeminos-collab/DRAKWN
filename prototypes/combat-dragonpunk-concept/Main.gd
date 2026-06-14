@@ -11,19 +11,42 @@ var hp_label: Label
 var spell_label: Label
 var round_over := false
 
+var camera:         Camera2D
+var shake_timer    := 0.0
+var shake_strength := 0.0
+
 func _ready() -> void:
+	position = Vector2.ZERO  # cancel any editor offset
 	_setup_input()
 	_setup_world()
 	_setup_player()
 	_setup_enemies()
 	_setup_ui()
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	# Camera shake decay
+	if shake_timer > 0.0:
+		shake_timer = maxf(0.0, shake_timer - delta)
+		camera.offset = Vector2(
+			randf_range(-shake_strength, shake_strength),
+			randf_range(-shake_strength, shake_strength)
+		)
+	else:
+		camera.offset = Vector2.ZERO
+
 	if not round_over and get_tree().get_nodes_in_group("enemies").size() == 0:
 		round_over = true
 		_show_message("¡RONDA SUPERADA! Recargando...")
 		await get_tree().create_timer(2.0).timeout
 		get_tree().reload_current_scene()
+
+# Called by Player and Enemy on any hit — freeze + shake
+func impact_feedback(strength: float = 8.0) -> void:
+	shake_strength = strength
+	shake_timer    = 0.18
+	Engine.time_scale = 0.0
+	await get_tree().create_timer(0.055, true, false, true).timeout
+	Engine.time_scale = 1.0
 
 func _setup_input() -> void:
 	_bind_key("move_left",  KEY_A)
@@ -42,6 +65,11 @@ func _bind_key(action: String, keycode: Key) -> void:
 	InputMap.action_add_event(action, ev)
 
 func _setup_world() -> void:
+	# Fixed camera centered on the world (needed for screen shake)
+	camera = Camera2D.new()
+	camera.position = Vector2(640, 360)
+	add_child(camera)
+
 	var bg := ColorRect.new()
 	bg.size = Vector2(1280, 720)
 	bg.color = Color(0.07, 0.07, 0.11)
@@ -63,11 +91,19 @@ func _make_platform(center: Vector2, size: Vector2) -> void:
 	col.shape = shape
 	body.add_child(col)
 
+	# Main body (dark purple)
 	var rect := ColorRect.new()
 	rect.size = size
 	rect.position = -size / 2.0
 	rect.color = Color(0.22, 0.18, 0.30)
 	body.add_child(rect)
+
+	# Top edge highlight so platforms look clearly like solid ground
+	var edge := ColorRect.new()
+	edge.size = Vector2(size.x, 3)
+	edge.position = Vector2(-size.x / 2.0, -size.y / 2.0)
+	edge.color = Color(0.55, 0.45, 0.75)
+	body.add_child(edge)
 
 func _setup_player() -> void:
 	player = Player.new()
@@ -77,8 +113,8 @@ func _setup_player() -> void:
 	player.spell_charge_changed.connect(_on_spell_charge_changed)
 
 func _setup_enemies() -> void:
-	_spawn_enemy(Vector2(700,  640))
-	_spawn_enemy(Vector2(1050, 640))
+	_spawn_enemy(Vector2(850,  640))   # further right — gives player room to orient
+	_spawn_enemy(Vector2(1100, 640))
 
 func _spawn_enemy(pos: Vector2) -> void:
 	var enemy := Enemy.new()
