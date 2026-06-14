@@ -5,59 +5,75 @@
 
 ## Engine & Language
 
-- **Engine**: [TO BE CONFIGURED — run /setup-engine]
-- **Language**: [TO BE CONFIGURED]
-- **Rendering**: [TO BE CONFIGURED]
-- **Physics**: [TO BE CONFIGURED]
+- **Engine**: Godot 4.6.3
+- **Language**: GDScript (gameplay/UI scripting), C# (performance-critical systems), C++ via GDExtension (native only)
+- **Rendering**: 2D CanvasItem / Viewport (2D metroidvania — no 3D)
+- **Physics**: Jolt Physics (default en Godot 4.6)
 
 ## Input & Platform
 
 <!-- Written by /setup-engine. Read by /ux-design, /ux-review, /test-setup, /team-ui, and /dev-story -->
 <!-- to scope interaction specs, test helpers, and implementation to the correct input methods. -->
 
-- **Target Platforms**: [TO BE CONFIGURED — e.g., PC, Console, Mobile, Web]
-- **Input Methods**: [TO BE CONFIGURED — e.g., Keyboard/Mouse, Gamepad, Touch, Mixed]
-- **Primary Input**: [TO BE CONFIGURED — the dominant input for this game]
-- **Gamepad Support**: [TO BE CONFIGURED — Full / Partial / None]
-- **Touch Support**: [TO BE CONFIGURED — Full / Partial / None]
-- **Platform Notes**: [TO BE CONFIGURED — any platform-specific UX constraints]
+- **Target Platforms**: PC (Steam)
+- **Input Methods**: Keyboard/Mouse, Gamepad
+- **Primary Input**: Keyboard/Mouse (menús) / Gamepad (combate — recomendado para metroidvania)
+- **Gamepad Support**: Partial (soporte completo recomendado para mejor feel de combate)
+- **Touch Support**: None
+- **Platform Notes**: Toda UI debe soportar navegación con d-pad. Sin interacciones hover-only. Input remapping requerido para accesibilidad básica.
 
 ## Naming Conventions
 
-- **Classes**: [TO BE CONFIGURED]
-- **Variables**: [TO BE CONFIGURED]
-- **Signals/Events**: [TO BE CONFIGURED]
-- **Files**: [TO BE CONFIGURED]
-- **Scenes/Prefabs**: [TO BE CONFIGURED]
-- **Constants**: [TO BE CONFIGURED]
+### GDScript (.gd files)
+- **Classes**: PascalCase (`PlayerController`, `DragonBoss`)
+- **Variables/funciones**: snake_case (`move_speed`, `take_damage()`)
+- **Signals**: snake_case past tense (`health_changed`, `power_absorbed`)
+- **Files**: snake_case matching clase (`player_controller.gd`)
+- **Scenes**: PascalCase matching root node (`PlayerController.tscn`)
+- **Constants**: UPPER_SNAKE_CASE (`MAX_HEALTH`, `BASE_DAMAGE`)
+
+### C# (.cs files)
+- **Classes**: PascalCase, siempre `partial` (`PlayerController`, `MasterySystem`)
+- **Public properties/fields**: PascalCase (`MoveSpeed`, `CurrentHealth`)
+- **Private fields**: `_camelCase` (`_currentHealth`, `_isGrounded`)
+- **Methods**: PascalCase (`TakeDamage()`, `AbsorbDragonPower()`)
+- **Signal delegates**: PascalCase + `EventHandler` (`HealthChangedEventHandler`)
+- **Files**: PascalCase matching clase (`PlayerController.cs`)
+- **Constants**: PascalCase (`MaxHealth`, `DefaultMoveSpeed`)
+
+### Cross-language boundary
+- Usar signals para comunicación GDScript ↔ C# — no llamadas directas cross-language
+- Si hay duda sobre qué lenguaje usar para un sistema nuevo, consultar con `godot-specialist`
+- La frontera se decide por archivo: `.gd` = GDScript, `.cs` = C#
 
 ## Performance Budgets
 
-- **Target Framerate**: [TO BE CONFIGURED]
-- **Frame Budget**: [TO BE CONFIGURED]
-- **Draw Calls**: [TO BE CONFIGURED]
-- **Memory Ceiling**: [TO BE CONFIGURED]
+- **Target Framerate**: 60 FPS
+- **Frame Budget**: 16.6ms
+- **Draw Calls**: ~500 máximo (2D metroidvania — ajustar según profiling real)
+- **Memory Ceiling**: Por determinar después del primer perfil de memoria real
 
 ## Testing
 
-- **Framework**: [TO BE CONFIGURED]
-- **Minimum Coverage**: [TO BE CONFIGURED]
-- **Required Tests**: Balance formulas, gameplay systems, networking (if applicable)
+- **Framework GDScript**: GUT (Godot Unit Testing framework)
+- **Framework C#**: NUnit (.NET)
+- **Minimum Coverage**: Sistemas de gameplay lógico (fórmulas, maestría, poderes de dragón)
+- **Required Tests**: Balance de daño/poder, state machine del jugador, absorción de poderes
 
 ## Forbidden Patterns
 
 <!-- Add patterns that should never appear in this project's codebase -->
-- [None configured yet — add as architectural decisions are made]
+- [Ninguno configurado aún — añadir cuando se tomen decisiones arquitectónicas]
 
 ## Allowed Libraries / Addons
 
-<!-- Add approved third-party dependencies here -->
-- [None configured yet — add as dependencies are approved]
+<!-- Add approved third-party dependencies here — ONLY when actively integrating, never speculatively -->
+- [Ninguno configurado aún — añadir solo cuando se integre activamente]
 
 ## Architecture Decisions Log
 
 <!-- Quick reference linking to full ADRs in docs/architecture/ -->
-- [No ADRs yet — use /architecture-decision to create one]
+- [Sin ADRs aún — usar /architecture-decision para crear]
 
 ## Engine Specialists
 
@@ -65,23 +81,26 @@
 <!-- Read by /code-review, /architecture-decision, /architecture-review, and team skills -->
 <!-- to know which specialist to spawn for engine-specific validation. -->
 
-- **Primary**: [TO BE CONFIGURED — run /setup-engine]
-- **Language/Code Specialist**: [TO BE CONFIGURED]
-- **Shader Specialist**: [TO BE CONFIGURED]
-- **UI Specialist**: [TO BE CONFIGURED]
-- **Additional Specialists**: [TO BE CONFIGURED]
-- **Routing Notes**: [TO BE CONFIGURED]
+- **Primary**: godot-specialist
+- **GDScript Specialist**: godot-gdscript-specialist (.gd files — gameplay/UI scripts)
+- **C# Specialist**: godot-csharp-specialist (.cs files — performance-critical systems)
+- **Shader Specialist**: godot-shader-specialist (.gdshader — sistema de paleta dinámica Fractura Sagrada)
+- **UI Specialist**: godot-specialist (no hay especialista UI dedicado — primary cubre toda la UI)
+- **Additional Specialists**: godot-gdextension-specialist (GDExtension / C++ nativo — solo si necesario)
+- **Routing Notes**: Invocar primary para arquitectura cross-cutting y decisiones de qué lenguaje usar. Invocar GDScript specialist para .gd (gameplay, señales, tipado estático). Invocar C# specialist para .cs y .csproj. Invocar shader specialist para el sistema de paleta dinámica Fractura Sagrada y todos los shaders. Preferir signals sobre llamadas directas cross-language en la frontera GDScript/C#.
 
 ### File Extension Routing
 
 <!-- Skills use this table to select the right specialist per file type. -->
-<!-- If a row says [TO BE CONFIGURED], fall back to Primary for that file type. -->
 
 | File Extension / Type | Specialist to Spawn |
 |-----------------------|---------------------|
-| Game code (primary language) | [TO BE CONFIGURED] |
-| Shader / material files | [TO BE CONFIGURED] |
-| UI / screen files | [TO BE CONFIGURED] |
-| Scene / prefab / level files | [TO BE CONFIGURED] |
-| Native extension / plugin files | [TO BE CONFIGURED] |
-| General architecture review | Primary |
+| Game code (.gd files) | godot-gdscript-specialist |
+| Game code (.cs files) | godot-csharp-specialist |
+| Cross-language boundary decisions | godot-specialist |
+| Shader / material files (.gdshader, VisualShader) | godot-shader-specialist |
+| UI / screen files (Control nodes, CanvasLayer) | godot-specialist |
+| Scene / prefab / level files (.tscn, .tres) | godot-specialist |
+| Project config (.csproj, NuGet) | godot-csharp-specialist |
+| Native extension / plugin files (.gdextension, C++) | godot-gdextension-specialist |
+| General architecture review | godot-specialist |
